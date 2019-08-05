@@ -1,5 +1,5 @@
 
-library(jsonlite)
+#library(jsonlite)
 
 #acquiring data from OpenDatasSoft API
 #mp1 <- fromJSON("https://public.opendatasoft.com/api/records/1.0/search/?dataset=namus-missings&sort=modifieddatetime&facet=cityoflastcontact&facet=countydisplaynameoflastcontact&facet=raceethnicity&facet=statedisplaynameoflastcontact&facet=gender")
@@ -23,6 +23,8 @@ str(mp)
 #reading in NAMUSshapefile
 library(rgdal)
 library(sf)
+library(sf)
+library(sp)
 library(GISTools)
 
 #Exploring the data
@@ -30,16 +32,7 @@ mp_shp <- st_read("namus-missings.shp")
 head(mp_shp)
 colnames(mp_shp)
 str(mp_shp)
-#dropping NA records
-mp_shp1 <- na.omit(mp_shp) 
 
-#veriying data is an sf data frame and colnames are intact
-class(mp_shp1)
-colnames(mp_shp1)
-
-library(tmap)
-library(rgdal)
-library(raster)
 
 #removing missing coordinates (c(NaN, NaN))
 
@@ -49,29 +42,78 @@ library(raster)
 #https://mygeodata.cloud/converter/csv-to-shp
 #write.csv(mp1, file = "mp1.csv")
 
-library(raster)
-library(sf)
-library(sp)
-library(rgdal)
-
-class(mp1)
-
 #using converted files 
 
-mp_shp2 <- st_read("mp1-point.shp",
-                   stringsAsFactors=FALSE)
+mp_shp1 <- st_read("mp1-point.shp")
+summary()
 
-df = subset(mp_shp2, select = -c(c.NA_character_..NA_character_..NA_character_..NA_character_..) )
-
+df = subset(mp_shp1, select = -c(c.NA_character_..NA_character_..NA_character_..NA_character_..) )
 
 #summary descriptive statistics
-
-
-summary(mp$Computed_Missing_Min_Age)
-class(df$Computed_1)
-class(mp$Computed_Missing_Max_Age)
-class(df$Computed_M)
+colnames(df)
+summary(df)
+summary(df$Gender)
+summary(as.numeric(df$Computed_1))
 summary(as.numeric(df$Computed_M))
-summary(as.factor(df$Gender))
-#Creating sf data frames 
+summary(df$Gender)
+summary(df$Race_Ethni)
 
+#Creating sf data frames for spatial analysis
+
+library(raster)
+library(tmap)
+
+mp_sf <- st_as_sf(df)
+qtm(df, fill = "blue", style = "natural")
+
+#create dataframe with just geometries
+
+#geo_shape <- data.frame(mp_sf$geometry)
+
+#create dataframe with just thematic data
+
+#geo_themes = subset(mp_sf, select = -c(geometry) )
+
+#df = subset(mydata, select = -c(x,z) )
+
+class(mp_sf)
+data.frame(mp_sf)
+
+head(data.frame(mp_sf))
+
+#creating dataframes for spatial analyses
+
+st_as_sf(geo_shape)
+summary(geo_shape)
+
+race_ethnicity <-data.frame(mp_sf$Race_Ethni)
+
+
+
+summary(race_ethnicity)
+class(race_ethnicity)
+
+#ensure it is a data frame
+class(mp_sf)
+
+mp_sf_v2 <-as(mp_sf, "Spatial")
+class(mp_sf_v2)
+
+#https://geocompr.robinlovelace.net/spatial-class.html <- additional reference
+library(leaflet)
+install.packages("spData")
+library(spData)
+devtools::install_github("Nowosad/spDataLarge")
+library(spDataLarge)
+library(leaflet)
+
+basemap <- tm_shape(World$continent)
+colnames(basemap)
+str(basemap)
+
+tm_shape(basemap) +
+  tm_polygons("df")
+library(mapdeck)
+
+
+plot(mp_sf$namus2Numb)
