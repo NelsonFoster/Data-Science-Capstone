@@ -5,58 +5,88 @@
 #mp1 <- fromJSON("https://public.opendatasoft.com/api/records/1.0/search/?dataset=namus-missings&sort=modifieddatetime&facet=cityoflastcontact&facet=countydisplaynameoflastcontact&facet=raceethnicity&facet=statedisplaynameoflastcontact&facet=gender")
 
 #acquiring local file of data as a backup
-#mp <-read.csv("namus-missings-1.csv") 
+getwd() 
+setwd("/Users/nfoster06/Documents/GitHub/Data-Science-Capstone/Data/Code/App")
+mp <- read.csv("namus-missings-1.csv",
+               stringsAsFactors = FALSE)
 
-mp <- read.csv("namus-missings-1.csv")
-
+na.omit(mp)
+summary(mp)
+#dropping NAs
 mp1 <- na.omit(mp) #omit NAs
-str(mp1)
-str(mp)
-#print(mp2$Lat, digits=10) #verifying import retained precision of Lat/lon
+head(mp1$Lat)
 
 #Exploring the data
-head(mp)
-list(mp)
-colnames(mp)
-str(mp)
+head(mp1)
+list(mp1)
+colnames(mp1)
+str(mp1)
+#generate csv file to convert to shp usint web utility
+#write.csv(mp1, file = "mp1.csv")
+#https://mygeodata.cloud/converter/csv-to-shp
 
-#reading in NAMUSshapefile
+#reading in updatedNAMUSshapefile,
 library(rgdal)
-library(sf)
 library(sf)
 library(sp)
 library(GISTools)
 
-#Exploring the data
-mp_shp <- st_read("namus-missings.shp")
-head(mp_shp)
-colnames(mp_shp)
-str(mp_shp)
-
-
-#removing missing coordinates (c(NaN, NaN))
-
-#mp_shp2 = subset(mp_shp$geometry == "c(NaN, NaN)")
-
-#generate csv file to convert to shp usint web utility
-#https://mygeodata.cloud/converter/csv-to-shp
-#write.csv(mp1, file = "mp1.csv")
-
-#using converted files 
-
 mp_shp1 <- st_read("mp1-point.shp")
-summary()
+#summary()
+#dropping conversion-generated column
+mp_shp2 = subset(mp_shp1, select = -c(c.NA_character_..NA_character_..NA_character_..NA_character_..) )
 
-df = subset(mp_shp1, select = -c(c.NA_character_..NA_character_..NA_character_..NA_character_..) )
+# identify Coordinate Reference System (CRS)
+st_crs(mp_shp2)
+# view extent
+st_bbox(mp_shp2)
+
+#Creating CRS Object
+utm18nCRS <- st_crs(mp_shp2)
+utm18nCRS
+
+class(utm18nCRS)
+
+#converting csv dataframe to sf object
+point_reference_mp <- st_as_sf(mp1, coords = c("Lat", "Lon"), crs = utm18nCRS)
+st_crs(point_reference_mp)
+# plot spatial object
+plot(point_reference_mp$geometry,
+     main = "Map of Plot Locations")
+
+# create boundary object
+boundary_mp <- mp_shp2
+
+# plot Boundary
+plot(boundary_mp$geometry,
+     main = "Missing Persions - NamUS")
+
+# add plot locations
+plot(point_reference_mp$geometry,
+     pch = 8, add = TRUE)
+# view CRS of each
+st_crs(boundary_mp)
+st_crs(point_reference_mp)
+
+# View extent of each
+
+st_bbox(boundary_mp)
+st_bbox(point_reference_mp)
+
+#export new shapefile for future use
+
+# write a shapefile
+st_write(point_reference_mp,
+         "point_reference_mp.shp", driver = "ESRI Shapefile")
 
 #summary descriptive statistics
-colnames(df)
-summary(df)
-summary(df$Gender)
-summary(as.numeric(df$Computed_1))
-summary(as.numeric(df$Computed_M))
-summary(df$Gender)
-summary(df$Race_Ethni)
+#colnames(df)
+#summary(df)
+#summary(df$Gender)
+#summary(as.numeric(df$Computed_1))
+#summary(as.numeric(df$Computed_M))
+#summary(df$Gender)
+#summary(df$Race_Ethni)
 
 #Creating sf data frames for spatial analysis
 
