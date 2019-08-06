@@ -31,20 +31,18 @@ library(sf)
 library(sp)
 library(GISTools)
 
-mp_shp1 <- st_read("mp1-point.shp")
-#summary()
-#dropping conversion-generated column
-mp_shp2 = subset(mp_shp1, select = -c(c.NA_character_..NA_character_..NA_character_..NA_character_..) )
+#reading in shapefile to identify & replicate its Coordinate Reference System (CRS)
+mp_shp1 <- st_read("namus-missings.shp")
 
 # identify Coordinate Reference System (CRS)
-st_crs(mp_shp2)
+st_crs(mp_shp1)
+
 # view extent
-st_bbox(mp_shp2)
+st_bbox(mp_shp1)
 
 #Creating CRS Object
-utm18nCRS <- st_crs(mp_shp2)
+utm18nCRS <- st_crs(mp_shp1)
 utm18nCRS
-
 class(utm18nCRS)
 
 #converting csv dataframe to sf object
@@ -52,14 +50,49 @@ point_reference_mp <- st_as_sf(mp1, coords = c("Lat", "Lon"), crs = utm18nCRS)
 st_crs(point_reference_mp)
 # plot spatial object
 plot(point_reference_mp$geometry,
-     main = "Map of Plot Locations")
+     main = "Missing Persons - NamUS")
 
-# create boundary object
-boundary_mp <- mp_shp2
+
+#writing shapefile for future reference
+st_write(point_reference_mp,
+         "point_reference_mp.shp", driver = "ESRI Shapefile")
+
+#plot "quickmap"
+qtm(point_reference_mp$geometry, fill = "blue", style = "natural")
+#qtm(point_reference_mp, fill = "Race_Ethni", text.size = 0.5,
+#format = "World_wide", style = "classic",
+#text.root=5, fill.title="Missing Persons by Race")
+
+#create Boundary
+
+library(GISTools)
+library(USAboundaries)
+library(raster)
+library(tmap)
+
+#boundaries shapefile with US territories
+
+world <- st_read("ne_10m_admin_1_states_provinces.shp")
+usa <- st_read("boundary_l_v2.shp")
+
+usa_sf <- 
+colnames(usa)
+us_states_sf <- st_as_sf(us_states)
+AoI.merge_sf <- st_sf(st_union(us_states_sf))
+tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) +
+  tm_shape(us_states_sf) + tm_borders(lwd = 1.5, col = "black") +
+  tm_layout(frame = F)
+
+us_states_sf1 <- st_as_sf(usa)
+AoI.merge_sf1 <- st_sf(st_union(us_states_sf))
+tm_shape(us_states_sf1) + tm_borders(col = "darkgreen", lty = 3) +
+  tm_shape(us_states_sf1) + tm_borders(lwd = 1.5, col = "black") +
+  tm_layout(frame = F)
+
 
 # plot Boundary
-plot(boundary_mp$geometry,
-     main = "Missing Persions - NamUS")
+plot(us_states_sf1$geometry,
+     main = "Missing Persons | CONUS")
 
 # add plot locations
 plot(point_reference_mp$geometry,
@@ -70,14 +103,9 @@ st_crs(point_reference_mp)
 
 # View extent of each
 
-st_bbox(boundary_mp)
+st_bbox(AoIboundary_mp)
 st_bbox(point_reference_mp)
 
-#export new shapefile for future use
-
-# write a shapefile
-st_write(point_reference_mp,
-         "point_reference_mp.shp", driver = "ESRI Shapefile")
 
 #summary descriptive statistics
 #colnames(df)
@@ -90,44 +118,21 @@ st_write(point_reference_mp,
 
 #Creating sf data frames for spatial analysis
 
-library(raster)
-library(tmap)
 
-mp_sf <- st_as_sf(df)
-qtm(df, fill = "blue", style = "natural")
+#plot tmap
 
-#create dataframe with just geometries
+#mp_tmap <- st_union(boundary_mp)
+#mp_tmap_point <-st_union(point_reference_mp)
 
-#geo_shape <- data.frame(mp_sf$geometry)
+tm_shape(point_reference_mp) + tm_borders(col = "darkgreen", lty = 3) +
+  tm_shape(boundary_mp) + tm_borders(lwd = 1.5, col = "black") +
+  tm_layout(frame=F)
 
-#create dataframe with just thematic data
 
-#geo_themes = subset(mp_sf, select = -c(geometry) )
-
-#df = subset(mydata, select = -c(x,z) )
-
-class(mp_sf)
-data.frame(mp_sf)
-
-head(data.frame(mp_sf))
-
-#creating dataframes for spatial analyses
-
-st_as_sf(geo_shape)
-summary(geo_shape)
-
-race_ethnicity <-data.frame(mp_sf$Race_Ethni)
+colnames(boundary_mp)
 
 
 
-summary(race_ethnicity)
-class(race_ethnicity)
-
-#ensure it is a data frame
-class(mp_sf)
-
-mp_sf_v2 <-as(mp_sf, "Spatial")
-class(mp_sf_v2)
 
 #https://geocompr.robinlovelace.net/spatial-class.html <- additional reference
 library(leaflet)
@@ -137,13 +142,4 @@ devtools::install_github("Nowosad/spDataLarge")
 library(spDataLarge)
 library(leaflet)
 
-basemap <- tm_shape(World$continent)
-colnames(basemap)
-str(basemap)
 
-tm_shape(basemap) +
-  tm_polygons("df")
-library(mapdeck)
-
-
-plot(mp_sf$namus2Numb)
