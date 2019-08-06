@@ -58,54 +58,60 @@ st_write(point_reference_mp,
          "point_reference_mp.shp", driver = "ESRI Shapefile")
 
 #plot "quickmap"
+library(tmap)
 qtm(point_reference_mp$geometry, fill = "blue", style = "natural")
 #qtm(point_reference_mp, fill = "Race_Ethni", text.size = 0.5,
 #format = "World_wide", style = "classic",
 #text.root=5, fill.title="Missing Persons by Race")
 
-#create Boundary
+library(GISTools) #for us states polygons
+data(tornados) #for us states polygons
 
-library(GISTools)
-library(USAboundaries)
-library(raster)
-library(tmap)
-
-#boundaries shapefile with US territories
-
-world <- st_read("ne_10m_admin_1_states_provinces.shp")
-usa <- st_read("boundary_l_v2.shp")
-
-usa_sf <- 
-colnames(usa)
+#establishing boundary
 us_states_sf <- st_as_sf(us_states)
 AoI.merge_sf <- st_sf(st_union(us_states_sf))
-tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) +
-  tm_shape(us_states_sf) + tm_borders(lwd = 1.5, col = "black") +
+tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) + 
+  tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
   tm_layout(frame = F)
 
-us_states_sf1 <- st_as_sf(usa)
-AoI.merge_sf1 <- st_sf(st_union(us_states_sf))
-tm_shape(us_states_sf1) + tm_borders(col = "darkgreen", lty = 3) +
-  tm_shape(us_states_sf1) + tm_borders(lwd = 1.5, col = "black") +
-  tm_layout(frame = F)
-
+class(us_states_sf1)
 
 # plot Boundary
-plot(us_states_sf1$geometry,
+plot(us_states_sf$geometry,
      main = "Missing Persons | CONUS")
 
 # add plot locations
+
 plot(point_reference_mp$geometry,
      pch = 8, add = TRUE)
-# view CRS of each
-st_crs(boundary_mp)
+
+# view CRS of each to ensure match
+st_crs(us_states_sf)
 st_crs(point_reference_mp)
 
 # View extent of each
 
-st_bbox(AoIboundary_mp)
+st_bbox(us_states_sf)
 st_bbox(point_reference_mp)
 
+#boundaries shapefile with US territories
+
+#world <- st_read("ne_10m_admin_1_states_provinces.shp")
+#usa <- st_read("boundary_l_v2.shp")
+#North_America <- st_read("North_America.shp")
+
+#library(rnaturalearth)
+#library(rnaturalearthdata)
+#library(ggplot2)
+#library(choroplethrMaps)
+#library(USAboundaries)
+
+#shapeFile with all of north america: 
+#us_states_sf1 <- st_as_sf(North_America)
+#AoI.merge_sf1 <- st_sf(st_union(us_states_sf1))
+#tm_shape(us_states_sf1) + tm_borders(col = "darkgreen", lty = 3) +
+  #tm_shape(us_states_sf1) + tm_borders(lwd = 1.5, col = "black") +
+  #tm_layout(frame = F)
 
 #summary descriptive statistics
 #colnames(df)
@@ -124,12 +130,6 @@ st_bbox(point_reference_mp)
 #mp_tmap <- st_union(boundary_mp)
 #mp_tmap_point <-st_union(point_reference_mp)
 
-tm_shape(point_reference_mp) + tm_borders(col = "darkgreen", lty = 3) +
-  tm_shape(boundary_mp) + tm_borders(lwd = 1.5, col = "black") +
-  tm_layout(frame=F)
-
-
-colnames(boundary_mp)
 
 
 
@@ -142,4 +142,6 @@ devtools::install_github("Nowosad/spDataLarge")
 library(spDataLarge)
 library(leaflet)
 
+tm_shape() +
+  tm_fill() 
 
