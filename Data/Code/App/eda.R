@@ -30,6 +30,7 @@ library(rgdal)
 library(sf)
 library(sp)
 library(GISTools)
+library(ggplot2)
 
 #reading in shapefile to identify & replicate its Coordinate Reference System (CRS)
 mp_shp1 <- st_read("namus-missings.shp")
@@ -74,7 +75,7 @@ tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) +
   tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
   tm_layout(frame = F)
 
-class(us_states_sf1)
+class(us_states_sf)
 
 # plot Boundary
 plot(us_states_sf$geometry,
@@ -94,41 +95,34 @@ st_crs(point_reference_mp)
 st_bbox(us_states_sf)
 st_bbox(point_reference_mp)
 
-#boundaries shapefile with US territories
+#establishing new boundary with North America and appropriate projections
 
-#world <- st_read("ne_10m_admin_1_states_provinces.shp")
-#usa <- st_read("boundary_l_v2.shp")
-#North_America <- st_read("North_America.shp")
+us_territories <- st_read("US_States_all_PR.shp")
 
-#library(rnaturalearth)
-#library(rnaturalearthdata)
-#library(ggplot2)
-#library(choroplethrMaps)
-#library(USAboundaries)
+st_crs(us_territories)
 
-#shapeFile with all of north america: 
-#us_states_sf1 <- st_as_sf(North_America)
-#AoI.merge_sf1 <- st_sf(st_union(us_states_sf1))
-#tm_shape(us_states_sf1) + tm_borders(col = "darkgreen", lty = 3) +
-  #tm_shape(us_states_sf1) + tm_borders(lwd = 1.5, col = "black") +
-  #tm_layout(frame = F)
+#transforming to conform to us territories CRS
 
-#summary descriptive statistics
-#colnames(df)
-#summary(df)
-#summary(df$Gender)
-#summary(as.numeric(df$Computed_1))
-#summary(as.numeric(df$Computed_M))
-#summary(df$Gender)
-#summary(df$Race_Ethni)
+st_crs(point_reference_mp)
+us_territories1 <- st_transform(us_territories, crs=4326 )
+st_crs(us_territories1)
 
-#Creating sf data frames for spatial analysis
+us_states_sf1 <- st_as_sf(us_territories1)
+AoI.merge_sf1 <- st_sf(st_union(us_territories1))
+tm_shape(us_states_sf1) + tm_borders(col = "darkgreen", lty = 3) + 
+  tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
+  tm_layout(frame = F)
 
+class(us_states_sf1)
 
-#plot tmap
+# plot Boundary
+plot(us_states_sf1$geometry,
+     main = "Missing Persons | CONUS")
 
-#mp_tmap <- st_union(boundary_mp)
-#mp_tmap_point <-st_union(point_reference_mp)
+# add plot locations
+
+plot(point_reference_mp$geometry,
+     pch = 8, add = TRUE)
 
 
 
