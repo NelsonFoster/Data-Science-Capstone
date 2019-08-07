@@ -124,9 +124,16 @@ plot(us_states_sf1$geometry,
 plot(point_reference_mp$geometry,
      pch = 8, add = TRUE)
 
+#updating maps to reflect appropriate north american projection to preserve distances in statistical models (World Azimuthal Equdistant)
+#reference - http://desktop.arcgis.com/en/arcmap/10.3/guide-books/map-projections/azimuthal-equidistant.htm
 
+library(maps)
+library(mapproj)
+mapproject()
 
+library(mapproj)
 
+map("state", projection="albers", par=c(lat0=30, lat1=40))
 
 #https://geocompr.robinlovelace.net/spatial-class.html <- additional reference
 library(leaflet)
@@ -135,6 +142,9 @@ library(spData)
 devtools::install_github("Nowosad/spDataLarge")
 library(spDataLarge)
 library(leaflet)
+
+
+
 
 tm_shape() +
   tm_fill() 
