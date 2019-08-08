@@ -1,9 +1,3 @@
-
-#library(jsonlite)
-
-#acquiring data from OpenDatasSoft API
-#mp1 <- fromJSON("https://public.opendatasoft.com/api/records/1.0/search/?dataset=namus-missings&sort=modifieddatetime&facet=cityoflastcontact&facet=countydisplaynameoflastcontact&facet=raceethnicity&facet=statedisplaynameoflastcontact&facet=gender")
-
 #acquiring local file of data as a backup
 getwd() 
 setwd("/Users/nfoster06/Documents/GitHub/Data-Science-Capstone/Data/Code/App")
@@ -41,33 +35,8 @@ st_crs(mp_shp1)
 # view extent
 st_bbox(mp_shp1)
 
-#establishing new boundary with North America and appropriate projections
-
-#us_territories <- st_read("US_States_all_PR.shp")
-#transforming to conform to us territories CRS
-
-
-library(spData)
-usa <- spData::us_states #map of contiguous United States
-colnames(usa)
-head(usa)
-st_crs(usa)
-plot(usa$geometry)
-head(usa$geometry,1)
-
-
-#usa1 <- st_transform(usa, crs= "+proj=aeqd +lat_0=39.8 +lon_0=-98.5 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
-
-#st_crs(usa1)
-
-#plot(usa1$geometry)
-
-#creating coordinate referece system (CRS) based on usa1 
-#Verify application of EPSG code (crs)
-
-usa2 <- st_transform(usa, crs=4326)
-st_crs(usa2)
-utm18nCRS <- st_crs(usa2)
+#establish CRS
+utm18nCRS <- st_crs(mp_shp1)
 
 st_crs(utm18nCRS)
 
@@ -123,10 +92,32 @@ st_crs(point_reference_mp)
 st_bbox(us_states_sf)
 st_bbox(point_reference_mp)
 
-#overlay census tracts
+#point in polygon calculations
 
+library(raster)
+library(spatstat)
 
+#points <- data.frame(point_reference_mp)
 
+#Q <- quadratcount(points, nx= 6, ny=3)
+#pointsinpoly <- over(points,us_states_sf)
+
+require(GISTools)
+require(tmap)
+
+library(spData)
+usa <- spData::us_states #map of contiguous United States
+colnames(usa)
+head(usa)
+st_crs(usa)
+plot(usa$geometry)
+head(usa$geometry,1)
+
+colnames(usa)
+
+states <- usa$NAME
+
+#preparing data for Shiny App
 
 #https://geocompr.robinlovelace.net/spatial-class.html <- additional reference
 library(leaflet)
@@ -138,6 +129,25 @@ library(leaflet)
 library(maps)
 library(ggplot2)
 
+states$name
+states <- map("state", fill = TRUE, plot = FALSE)
+#linking the two 
+mp_state <- mp1[as.character(state.fips$abb), -1]
+
+#identify state names in states dataframe
+states$names
+#identify state names in missing persons dataset
+row.names(mp1) <- mp1$State_Of_Last_Contact
+#identify state codes in states dataframe
+head(state.fips)
+head(state.fips)
+
+#linking the two 
+mp_state <- mp1[as.character(state.fips$abb), -1]
+
+
+
+
 
 
 
@@ -145,12 +155,20 @@ library(ggplot2)
 
 
 ###problem areas###
+#library(jsonlite)
+
+#acquiring data from OpenDatasSoft API
+#mp1 <- fromJSON("https://public.opendatasoft.com/api/records/1.0/search/?dataset=namus-missings&sort=modifieddatetime&facet=cityoflastcontact&facet=countydisplaynameoflastcontact&facet=raceethnicity&facet=statedisplaynameoflastcontact&facet=gender")
+
 #updating maps to reflect appropriate north american projection to preserve distances in statistical models (World Azimuthal Equdistant)
 #adjusting to set central meridian to center of united states (37.0902° N, 95.7129° W)
 #reference - http://desktop.arcgis.com/en/arcmap/10.3/guide-books/map-projections/azimuthal-equidistant.htm
 
 #library(mapproj)
+#establishing new boundary with North America and appropriate projections
 
+#us_territories <- st_read("US_States_all_PR.shp")
+#transforming to conform to us territories CRS
 #us_states_proj <- map("state", projection="azequalarea")
 
 #us_states_proj1 <- st_transform(us_states_proj, crs=54032)
@@ -168,6 +186,26 @@ library(ggplot2)
 #tm_layout(frame = F)
 
 #class(us_territories_sf1)
+
+#library(spData) 
+#usa <- spData::us_states #map of contiguous United States
+#colnames(usa)
+#head(usa)
+#st_crs(usa)
+#plot(usa$geometry)
+#head(usa$geometry,1)
+
+#usa1 <- st_transform(usa, crs= "+proj=aeqd +lat_0=39.8 +lon_0=-98.5 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+
+#st_crs(usa1)
+
+#plot(usa1$geometry)
+
+#creating coordinate referece system (CRS) based on usa1 
+#Verify application of EPSG code (crs)
+
+#usa2 <- st_transform(usa, crs=4326)
+#st_crs(usa2)
 
 #class(usa)
 
