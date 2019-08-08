@@ -1,7 +1,22 @@
+#getwd() 
+#setwd("/Users/nfoster06/Documents/GitHub/Data-Science-Capstone/Data/Code/App")
+
 library(leaflet)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
+library(maps)
+library(GISTools)
+library(tmap)
+library(raster)
+library(spatstat)
+library(rgdal)
+library(sf)
+library(sp)
+library(data.table)
+
+#data(tornados) 
+
 #process.R
 
 df = read.csv("./mp_points.csv", stringsAsFactors = F)
@@ -24,3 +39,10 @@ saveRDS(df, "./data.rds")
 
 sample_data <- df
 saveRDS(sample_data, "./sample_data.rds")
+
+#additional variables
+date_missing <- as.Date(df$Date_Of_Last_Contact)
+
+
+
+

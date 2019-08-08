@@ -158,7 +158,7 @@ mp_per_county <- count(mp, "State_Of_Last_Contact", "County_Of_Last_Contact")
 mp_per_city <- count(mp, "City_Of_Last_Contact")
 
 head(state.fips)
-count(mp, "State_Of_Last_Contact")
+count(df, "State_Of_Last_Contact")
 
 colnames(mp_per_state)
 
@@ -166,11 +166,11 @@ summary(mp_per_state)
 
 colnames(mp)
 mp_per_state$namus2Number
-row.names(mp) <- data.frame(mp$State_Of_Last_Contact)
+row.names(df) <- data.frame(df$State_Of_Last_Contact)
 
 colnames(mp)
 
-dfnew5 <- count(mp, "State_Of_Last_Contact", "County_Of_Last_Contact")
+dfnew5 <- count(df, "State_Of_Last_Contact", "County_Of_Last_Contact")
 
 
 
