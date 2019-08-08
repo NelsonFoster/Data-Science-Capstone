@@ -59,16 +59,19 @@ st_crs(usa)
 plot(usa$geometry)
 head(usa$geometry,1)
 
-usa1 <- st_transform(usa, crs=54032, '+proj=aeqd +lat_0=37.1 +lon_0==-95.7 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs')
-st_crs(usa1)
 
-plot(usa1$geometry)
+#usa1 <- st_transform(usa, crs= "+proj=aeqd +lat_0=39.8 +lon_0=-98.5 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+
+#st_crs(usa1)
+
+#plot(usa1$geometry)
 
 #creating coordinate referece system (CRS) based on usa1 
 #Verify application of EPSG code (crs)
 
-
-utm18nCRS <- st_crs(usa1)
+usa2 <- st_transform(usa, crs=4326)
+st_crs(usa2)
+utm18nCRS <- st_crs(usa2)
 
 st_crs(utm18nCRS)
 
@@ -77,8 +80,11 @@ class(utm18nCRS)
 #converting csv dataframe to sf object
 point_reference_mp <- st_as_sf(mp1, coords = c("Lat", "Lon"), crs = utm18nCRS)
 st_crs(point_reference_mp)
+point_reference_mp1 <-st_transform(point_reference_mp, crs= 4326)
+st_crs(point_reference_mp1)
+
 # plot spatial object
-plot(point_reference_mp$geometry,
+plot(point_reference_mp1$geometry,
      main = "Missing Persons - NamUS")
 
 #writing shapefile for future reference
@@ -87,7 +93,7 @@ plot(point_reference_mp$geometry,
 
 #plot "quickmap"
 library(tmap)
-qtm(point_reference_mp$geometry, fill = "blue", style = "natural")
+qtm(point_reference_mp1$geometry, fill = "blue", style = "natural")
 
 #us_territories_sf1 <- st_as_sf(us_territories1)
 #AoI.merge_sf1 <- st_sf(st_union(us_territories1))
@@ -97,8 +103,12 @@ qtm(point_reference_mp$geometry, fill = "blue", style = "natural")
 
 #class(us_territories_sf1)
 
-usa_sf <- st_as_sf(usa1)
-AoI.merge_sf <- st_sf(st_union(usa))
+class(usa)
+
+class(usa1)
+
+usa_sf <- st_as_sf(usa2)
+AoI.merge_sf <- st_sf(st_union(usa_sf))
 tm_shape(usa_sf) + tm_borders(col = "darkgreen", lty = 3) + 
 tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
 tm_layout(frame = F)
@@ -106,12 +116,12 @@ tm_layout(frame = F)
 #class(us_territories_sf1)
 
 # plot Boundary
-plot(us_states_sf1$geometry,
+plot(usa_sf$geometry,
      main = "Missing Persons | CONUS")
 
 # add plot locations
 
-plot(point_reference_mp$geometry,
+plot(point_reference_mp1$geometry,
      pch = 8, add = TRUE)
 
 
