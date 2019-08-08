@@ -41,9 +41,37 @@ st_crs(mp_shp1)
 # view extent
 st_bbox(mp_shp1)
 
-#Creating CRS Object
-utm18nCRS <- st_crs(mp_shp1)
-utm18nCRS
+#establishing new boundary with North America and appropriate projections
+
+us_territories <- st_read("US_States_all_PR.shp")
+#transforming to conform to us territories CRS
+
+#updating maps to reflect appropriate north american projection to preserve distances in statistical models (World Azimuthal Equdistant)
+#adjusting to set central meridian to center of united states (37.0902° N, 95.7129° W)
+#reference - http://desktop.arcgis.com/en/arcmap/10.3/guide-books/map-projections/azimuthal-equidistant.htm
+
+
+library(spData)
+usa <- spData::us_states #map of contiguous United States
+colnames(usa)
+head(usa)
+st_crs(usa)
+plot(usa$geometry)
+head(usa$geometry,1)
+
+usa1 <- st_transform(usa, crs=54032, '+proj=aeqd +lat_0=37.1 +lon_0==-95.7 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs')
+st_crs(usa1)
+
+plot(usa1$geometry)
+
+#creating coordinate referece system (CRS) based on usa1 
+#Verify application of EPSG code (crs)
+
+
+utm18nCRS <- st_crs(usa1)
+
+st_crs(utm18nCRS)
+
 class(utm18nCRS)
 
 #converting csv dataframe to sf object
@@ -53,67 +81,29 @@ st_crs(point_reference_mp)
 plot(point_reference_mp$geometry,
      main = "Missing Persons - NamUS")
 
-
 #writing shapefile for future reference
-st_write(point_reference_mp,
-         "point_reference_mp.shp", driver = "ESRI Shapefile")
+#st_write(point_reference_mp,
+         #"point_reference_mp.shp", driver = "ESRI Shapefile")
 
 #plot "quickmap"
 library(tmap)
 qtm(point_reference_mp$geometry, fill = "blue", style = "natural")
-#qtm(point_reference_mp, fill = "Race_Ethni", text.size = 0.5,
-#format = "World_wide", style = "classic",
-#text.root=5, fill.title="Missing Persons by Race")
 
-library(GISTools) #for us states polygons
-data(tornados) #for us states polygons
+#us_territories_sf1 <- st_as_sf(us_territories1)
+#AoI.merge_sf1 <- st_sf(st_union(us_territories1))
+#tm_shape(us_territories_sf1) + tm_borders(col = "darkgreen", lty = 3) + 
+  #tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
+  #tm_layout(frame = F)
 
-#establishing boundary
-us_states_sf <- st_as_sf(us_states)
-AoI.merge_sf <- st_sf(st_union(us_states_sf))
-tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) + 
-  tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
-  tm_layout(frame = F)
+#class(us_territories_sf1)
 
-class(us_states_sf)
+usa_sf <- st_as_sf(usa1)
+AoI.merge_sf <- st_sf(st_union(usa))
+tm_shape(usa_sf) + tm_borders(col = "darkgreen", lty = 3) + 
+tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
+tm_layout(frame = F)
 
-# plot Boundary
-plot(us_states_sf$geometry,
-     main = "Missing Persons | CONUS")
-
-# add plot locations
-
-plot(point_reference_mp$geometry,
-     pch = 8, add = TRUE)
-
-# view CRS of each to ensure match
-st_crs(us_states_sf)
-st_crs(point_reference_mp)
-
-# View extent of each
-
-st_bbox(us_states_sf)
-st_bbox(point_reference_mp)
-
-#establishing new boundary with North America and appropriate projections
-
-us_territories <- st_read("US_States_all_PR.shp")
-
-st_crs(us_territories)
-
-#transforming to conform to us territories CRS
-
-st_crs(point_reference_mp)
-us_territories1 <- st_transform(us_territories, crs=4326 )
-st_crs(us_territories1)
-
-us_states_sf1 <- st_as_sf(us_territories1)
-AoI.merge_sf1 <- st_sf(st_union(us_territories1))
-tm_shape(us_states_sf1) + tm_borders(col = "darkgreen", lty = 3) + 
-  tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
-  tm_layout(frame = F)
-
-class(us_states_sf1)
+#class(us_territories_sf1)
 
 # plot Boundary
 plot(us_states_sf1$geometry,
@@ -124,16 +114,63 @@ plot(us_states_sf1$geometry,
 plot(point_reference_mp$geometry,
      pch = 8, add = TRUE)
 
-#updating maps to reflect appropriate north american projection to preserve distances in statistical models (World Azimuthal Equdistant)
-#reference - http://desktop.arcgis.com/en/arcmap/10.3/guide-books/map-projections/azimuthal-equidistant.htm
+
+
+
+
+
+#library(GISTools) #for us states polygons
+#data(tornados) #for us states polygons
+
+#establishing boundary
+#us_states_sf <- st_as_sf(us_states)
+#AoI.merge_sf <- st_sf(st_union(us_states_sf))
+#tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) + 
+  #tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
+  #tm_layout(frame = F)
+
+#class(us_states_sf)
+
+# plot Boundary
+#plot(us_states_sf$geometry,
+     #main = "Missing Persons | CONUS")
+
+# add plot locations
+
+#plot(point_reference_mp$geometry,
+     #pch = 8, add = TRUE)
+
+# view CRS of each to ensure match
+#st_crs(us_states_sf)
+#st_crs(point_reference_mp)
+
+# View extent of each
+
+#st_bbox(us_states_sf)
+#st_bbox(point_reference_mp)
+
+
+
+
+
+
+
 
 library(maps)
 library(mapproj)
-mapproject()
+library(ggplot2)
+#mapproject()
 
 library(mapproj)
 
-map("state", projection="albers", par=c(lat0=30, lat1=40))
+us_states_proj <- map("state", projection="azequalarea")
+
+us_states_proj1 <- st_transform(us_states_proj, crs=54032)
+
+proj_states <- st_as_sf(us_states_proj)
+
+st_crs(us_states_proj)
+class(us_states_proj)
 
 #https://geocompr.robinlovelace.net/spatial-class.html <- additional reference
 library(leaflet)
@@ -146,6 +183,4 @@ library(leaflet)
 
 
 
-tm_shape() +
-  tm_fill() 
 
