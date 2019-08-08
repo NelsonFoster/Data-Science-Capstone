@@ -142,15 +142,35 @@ row.names(mp1) <- mp1$State_Of_Last_Contact
 head(state.fips)
 head(state.fips)
 
+mp1$State_Of_Last_Contact
+
 #linking the two 
 mp_state <- mp1[as.character(state.fips$abb), -1]
 
+library(dplyr)
+library(plyr)
+#dataframes for analyses
+mp <- read.csv("mp1.csv")
 
 
+mp_per_state <- count(mp, "State_Of_Last_Contact")
+mp_per_county <- count(mp, "State_Of_Last_Contact", "County_Of_Last_Contact")
+mp_per_city <- count(mp, "City_Of_Last_Contact")
 
+head(state.fips)
+count(mp, "State_Of_Last_Contact")
 
+colnames(mp_per_state)
 
+summary(mp_per_state)
 
+colnames(mp)
+mp_per_state$namus2Number
+row.names(mp) <- data.frame(mp$State_Of_Last_Contact)
+
+colnames(mp)
+
+dfnew5 <- count(mp, "State_Of_Last_Contact", "County_Of_Last_Contact")
 
 
 
