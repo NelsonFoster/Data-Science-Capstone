@@ -11,6 +11,7 @@ library(tigris)
 options(tigris_use_cache = TRUE)
 library(sf)
 library(sp)
+library(censusapi)
 
 #defining state boundaries and obtaining census tract data (Large SpatialPolygonsDataFrame)
 states <- states(cb=T)
@@ -21,8 +22,8 @@ states <- states(cb=T)
   addTiles() %>% 
   addPolygons(popup=~NAME)
 
-plot(df_shp$geometry, pch = 20, col = "steelblue")
-plot(usa$geometry, pch = 20, col = "grey")
+#plot(df_shp$geometry, pch = 20, col = "steelblue")
+#plot(states$geometry, pch = 20, col = "grey")
 
 #reading in point data 
 df = read.csv("./mp_points.csv", stringsAsFactors = F)
@@ -62,11 +63,12 @@ states_merged_mp <- subset(states_merged_mp, !is.na(total))
 
 # Setting up the pop up text
 popup_mp <- paste0("Total Missing Persons: ", as.character(states_merged_mp$total))
+                  
 
 # Mapping using CartoDB.Positron basemap
 leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>%
-  setView(-98.5795, 39.8283, zoom = 4) %>% #geographic center of the United States
+  setView(-98.483330, 38.712046, zoom = 4) %>% #geographic center of the United States
   addPolygons(data = states_merged_mp , 
               fillColor = ~pal(states_merged_mp$total), 
               fillOpacity = 0.7, 
@@ -77,4 +79,92 @@ leaflet() %>%
             values = states_merged_mp$total, 
             position = "bottomright", 
             title = "Missing Persons in the United States")
+
+# Creating new map using census data to adjust for population density
+#add Census API Key to R environment
+Sys.setenv(CENSUS_KEY="31fff949176a736010c1e360cacac97f81c300b8")
+#reload environment
+readRenviron("~/.Renviron")
+#verify key is loaded
+Sys.getenv("CENSUS_KEY")
+
+#view list of APIs available
+#apis <- listCensusApis()
+#View(apis)
+
+#read in population data via Census API Key
+state_pop <-  getCensus(name="acs/acs5", 
+                        vintage=2015,
+                        key=census_key, 
+                        vars=c("NAME", "B01003_001E"), 
+                        region="state:*")
+
+# Cleaning up the column names
+colnames(state_pop) <- c("state_id", "NAME", "population")
+state_pop$state_id <- as.numeric(state_pop$state_id)
+# Hm, data comes in numbers of fully spelled out, not abbreviations
+
+#pulling in R's state abbreviations
+state_off <- data.frame(state.abb, state.name)
+head(state_off)
+
+#creating relational dataframe between states and state abbreviations
+# Cleaning up the names for easier joining
+colnames(state_off) <- c("state", "NAME")
+
+# Joining state population dataframe to relationship file
+state_pop <- left_join(state_pop, state_off)
+
+# The relationship dataframe didnt have DC or Puerto Rico, so I'm manually putting those in
+state_pop$state <- ifelse(state_pop$NAME=="District of Columbia", "DC", as.character(state_pop$state))
+state_pop$state <- ifelse(state_pop$NAME=="Puerto Rico", "PR", as.character(state_pop$state))
+
+# Joining mp_state dataframe to adjusted state population dataframe
+#changing colname for join
+
+names(mp_state)[names(mp_state) == "State_Of_Last_Contact"] <- "state"
+
+mp_state_pop <- left_join(mp_state, state_pop)
+
+# calculating per capita missing persons (1 per 100,000 standard, rounded)
+#reference - https://www.thebalance.com/per-capita-what-it-means-calculation-how-to-use-it-3305876
+
+mp_state_pop$per_capita <- round(mp_state_pop$total/mp_state_pop$population*100000,2)
+
+# Eliminating rows with NA
+#mp_state_pop <- filter(mp_state_pop, !is.na(per_capita))
+#head(mp_state_pop)
+
+#creating new map with per capita values
+
+states_merged_mp_pc <- geo_join(states, mp_state_pop, "STUSPS", "state")
+
+pal_mp <- colorNumeric("Blues", domain=states_merged_mp_pc$per_capita)
+states_merged_mp_pc <- subset(states_merged_mp_pc, !is.na(per_capita))
+
+# new popup withs state-specific data reactive upon click
+popup_sb <- paste0("<strong>", states_merged_mp_pc$NAME, 
+                   "</strong><br />Total: ", states_merged_mp_pc$total,
+                   "<br />Per capita: ", 
+                   as.character(states_merged_mp_pc$per_capita))
+head(popup_mp)
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(-98.483330, 38.712046, zoom = 4) %>% 
+  addPolygons(data = states_merged_mp_pc , 
+              fillColor = ~pal_mp(states_merged_mp_pc$per_capita), 
+              fillOpacity = 0.9, 
+              weight = 0.2, 
+              smoothFactor = 0.2, 
+              popup = ~popup_mp) %>%
+  addLegend(pal = pal_mp, 
+            values = states_merged_mp_pc$per_capita, 
+            position = "bottomright", 
+            title = "Missing Persons<br />per 100,000<br/>residents")
+
+#implementing spatial analyses 
+
+
+
 
