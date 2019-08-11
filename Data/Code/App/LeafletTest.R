@@ -7,6 +7,7 @@ library(leaflet)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
+library(tidycensus)
 library(tigris)
 options(tigris_use_cache = TRUE)
 library(sf)
@@ -17,7 +18,7 @@ library(censusapi)
 states <- states(cb=T)
 
 #plotting using embedded dplyr pipes functionality in R
-#states %>% 
+states %>% 
   leaflet() %>% 
   addTiles() %>% 
   addPolygons(popup=~NAME)
@@ -39,12 +40,34 @@ df$Longitude <- stringr::str_replace_all(df$Longitude, "[)]", "")
 df$Latitude <- as.numeric(df$Latitude)
 df$Longitude <- as.numeric(df$Longitude)
 
+#updating Race & Ethnicity categories for "cleaner" aggregaions
+#to be used in hypothesis testing later (reference: https://nces.ed.gov/statprog/2002/std1_5.asp)
+
+df$Race_Ethnicity[df$Race_Ethnicity=="Black / African American;Hispanic / Latino"] <- "Black / African American"
+df$Race_Ethnicity[df$Race_Ethnicity=="Black / African American;White / Caucasian"] <- "Black / African American"
+df$Race_Ethnicity[df$Race_Ethnicity=="Hispanic / Latino;Asian"] <- "Hispanic / Latino"
+df$Race_Ethnicity[df$Race_Ethnicity=="Hispanic / Latino;Native American / Alaskan Native"] <- "Hispanic / Latino"
+df$Race_Ethnicity[df$Race_Ethnicity=="Hispanic / Latino;Uncertain"] <- "Hispanic / Latino"
+df$Race_Ethnicity[df$Race_Ethnicity=="Other"] <- "Other/Uncertain"
+df$Race_Ethnicity[df$Race_Ethnicity=="Uncertain"] <- "Other/Uncertain"
+df$Race_Ethnicity[df$Race_Ethnicity=="White / Caucasian;Black / African American"] <- "White / Caucasian"
+df$Race_Ethnicity[df$Race_Ethnicity=="White / Caucasian;Hispanic / Latino"] <- "White / Caucasian"
+df$Race_Ethnicity[df$Race_Ethnicity=="White / Caucasian;Uncertain"] <- "White / Caucasian"
+
+
 #summarize - Count Missing Persons by State with dplyr
 
 mp_state <- df %>%
   group_by(State_Of_Last_Contact) %>%
   summarize(total=n()) %>%
   mutate(type = "Missing Persons")
+
+#summarize - Count Missing Persons by race/ethnicity with dplyr
+
+mp_race_ethnicity <- df %>%
+  group_by(Race_Ethnicity) %>%
+  summarize(total=n()) %>%
+  mutate(type = "Race/Ethnicity")
 
 #transforming to correct Coordinate Reference System (CRS)
 #mp_state <- st_as_sf(mp_state)
@@ -82,15 +105,18 @@ leaflet() %>%
 
 # Creating new map using census data to adjust for population density
 #add Census API Key to R environment
+# Add key to .Renviron
 Sys.setenv(CENSUS_KEY="31fff949176a736010c1e360cacac97f81c300b8")
-#reload environment
+# Reload .Renviron
 readRenviron("~/.Renviron")
-#verify key is loaded
+# Check to see that the expected key is output in your R console
 Sys.getenv("CENSUS_KEY")
 
 #view list of APIs available
 #apis <- listCensusApis()
 #View(apis)
+
+census_key <- ("31fff949176a736010c1e360cacac97f81c300b8")
 
 #read in population data via Census API Key
 state_pop <-  getCensus(name="acs/acs5", 
@@ -147,7 +173,7 @@ popup_sb <- paste0("<strong>", states_merged_mp_pc$NAME,
                    "</strong><br />Total: ", states_merged_mp_pc$total,
                    "<br />Per capita: ", 
                    as.character(states_merged_mp_pc$per_capita))
-head(popup_mp)
+#head(popup_mp)
 
 leaflet() %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
@@ -163,7 +189,11 @@ leaflet() %>%
             position = "bottomright", 
             title = "Missing Persons<br />per 100,000<br/>residents")
 
+
+
+
 #implementing spatial analyses 
+
 
 
 
