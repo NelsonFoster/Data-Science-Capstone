@@ -1,20 +1,20 @@
 #acquiring local file of data as a backup
-getwd() 
-setwd("/Users/nfoster06/Documents/GitHub/Data-Science-Capstone/Data/Code/App")
-mp <- read.csv("namus-missings-1.csv",
-               stringsAsFactors = FALSE)
+#getwd() 
+#setwd("/Users/nfoster06/Documents/GitHub/Data-Science-Capstone/Data/Code/App")
+#mp <- read.csv("namus-missings-1.csv",
+               #stringsAsFactors = FALSE)
 
-na.omit(mp)
-summary(mp)
+#na.omit(mp)
+#summary(mp)
 #dropping NAs
-mp1 <- na.omit(mp) #omit NAs
-head(mp1$Lat)
+#mp1 <- na.omit(mp) #omit NAs
+#head(mp1$Lat)
 
 #Exploring the data
-head(mp1)
-list(mp1)
-colnames(mp1)
-str(mp1)
+#head(mp1)
+#list(mp1)
+#colnames(mp1)
+#str(mp1)
 #generate csv file to convert to shp usint web utility
 #write.csv(mp1, file = "mp1.csv")
 #https://mygeodata.cloud/converter/csv-to-shp
@@ -25,152 +25,210 @@ library(sf)
 library(sp)
 library(GISTools)
 library(ggplot2)
+library(leaflet)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(maps)
+library(GISTools)
+library(tmap)
+library(raster)
+library(spatstat)
+library(rgdal)
+library(sf)
+library(sp)
+library(data.table)
+library(reshape)
+library(reshape2)
 
 #reading in shapefile to identify & replicate its Coordinate Reference System (CRS)
-mp_shp1 <- st_read("namus-missings.shp")
+mp_shp <- st_read("namus-missings.shp")
 
 # identify Coordinate Reference System (CRS)
-st_crs(mp_shp1)
+st_crs(mp_shp)
 
 # view extent
-st_bbox(mp_shp1)
+st_bbox(mp_shp)
 
 #establish CRS
-utm18nCRS <- st_crs(mp_shp1)
+utm18nCRS <- st_crs(mp_shp)
 
+#verify CRS attributes
 st_crs(utm18nCRS)
-
+#verify class is CRS 
 class(utm18nCRS)
 
 #converting csv dataframe to sf object
-point_reference_mp <- st_as_sf(mp1, coords = c("Lat", "Lon"), crs = utm18nCRS)
-st_crs(point_reference_mp)
-point_reference_mp1 <-st_transform(point_reference_mp, crs= 4326)
-st_crs(point_reference_mp1)
+df_points <- st_as_sf(df, coords = c("Longitude", "Latitude"), crs = utm18nCRS)
+st_crs(df_points)
+class(df_points)
 
-# plot spatial object
-plot(point_reference_mp1$geometry,
-     main = "Missing Persons - NamUS")
+#plot spatial object
+plot(df_points$geometry, pch = 20, col = "steelblue")
 
 #writing shapefile for future reference
-#st_write(point_reference_mp,
-         #"point_reference_mp.shp", driver = "ESRI Shapefile")
+st_write(df_points,
+"df_points.shp", driver = "ESRI Shapefile")
 
 #plot "quickmap"
 library(tmap)
-qtm(point_reference_mp$geometry, fill = "blue", style = "natural")
+qtm(df_points$geometry, fill = "steelblue", style = "natural")
 
-
-library(GISTools) #for us states polygons
-data(tornados) #for us states polygons
-
-#establishing boundary
-
-us_states_sf <- st_as_sf(us_states)
-AoI.merge_sf <- st_sf(st_union(us_states_sf))
-tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) + 
-  tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
-  tm_layout(frame = F)
-
-class(us_states_sf)
-
-# plot Boundary
-plot(us_states_sf$geometry,
-     main = "Missing Persons | CONUS")
-
-# add plot locations
-
-plot(point_reference_mp$geometry,
-     pch = 8, add = TRUE)
-
-#view CRS of each to ensure match
-st_crs(us_states_sf)
-st_crs(point_reference_mp)
-
-#View extent of each
-
-st_bbox(us_states_sf)
-st_bbox(point_reference_mp)
-
-#point in polygon calculations
-
+#getting boundary map of US states
+library(spData)
+require(GISTools)
+require(tmap)
+library(spData)
+devtools::install_github("Nowosad/spDataLarge")
+library(spDataLarge)
+library(maps)
+library(ggplot2)
 library(raster)
 library(spatstat)
 
-#points <- data.frame(point_reference_mp)
-
-#Q <- quadratcount(points, nx= 6, ny=3)
-#pointsinpoly <- over(points,us_states_sf)
-
-require(GISTools)
-require(tmap)
-
-library(spData)
-usa <- spData::us_states #map of contiguous United States
+usa <- spData::us_states #map of contiguous United States with census population data
 colnames(usa)
 head(usa)
 st_crs(usa)
 plot(usa$geometry)
 head(usa$geometry,1)
 
-colnames(usa)
 
-states <- usa$NAME
+plot(df_points$geometry, pch = 20, col = "steelblue")
+
+####research on tables and other data frames
+#create summary of missing persons by race
+
+#mp_by_state <- dplyr::tbl_df(df)
+
+#by_state <- group_by(df, State_Of_Last_Contact)
+
+#count(df, c("State_Of_Last_Contact", "id_Formatted"))
+
+#aggregate(id_Formatted ~ State_Of_Last_Contact, data = df, count)
+
+#table(mp_by_state[c(1, 3)])
+
+#by_state <- table(mp_by_state$State_Of_Last_Contact)
+#missing_state <- data.frame(table(mp_by_state$State_Of_Last_Contact))
+#missing_city <- data.frame(table(mp_by_state$City_Of_Last_Contact))
+#missing_county <- data.frame(table(mp_by_state$County_Of_Last_Contact))
+
+#Race_ethnicity <- data.frame(table(mp_by_state$Race_Ethnicity))
+
+                           
+
+
+
+
+
+
+#library(GISTools) #for us states polygons
+#data(tornados) #for us states polygons
+
+#establishing boundary
+
+#usa <- spData::us_states #map of contiguous United States with census population data
+#class(usa)
+#AoI.merge_sf <- st_sf(st_union(us_states_sf))
+#tm_shape(us_states_sf) + tm_borders(col = "darkgreen", lty = 3) + 
+  #tm_shape(AoI.merge_sf) + tm_borders(lwd = 1.5, col = "black") + 
+  #tm_layout(frame = F)
+
+#class(us_states_sf)
+
+# plot Boundary
+#plot(us_states_sf$geometry,
+     #main = "Missing Persons | CONUS")
+
+# add plot locations
+
+#plot(point_reference_mp$geometry,
+     #pch = 8, add = TRUE)
+
+
+
+#points <- data.frame(point_reference_mp)
+
+#Q <- quadratcount(points, nx= 6, ny=3)
+#pointsinpoly <- over(points,us_states_sf)
+
+
+
+
+
+
+#states <- usa$NAME
 
 #preparing data for Shiny App
 
 #https://geocompr.robinlovelace.net/spatial-class.html <- additional reference
 library(leaflet)
-install.packages("spData")
+#install.packages("spData")
 library(spData)
-devtools::install_github("Nowosad/spDataLarge")
-library(spDataLarge)
-library(leaflet)
-library(maps)
-library(ggplot2)
 
-states$name
-states <- map("state", fill = TRUE, plot = FALSE)
+
+#states$name
+#states <- map("state", fill = TRUE, plot = FALSE)
 #linking the two 
-mp_state <- mp1[as.character(state.fips$abb), -1]
+#mp_state <- mp1[as.character(state.fips$abb), -1]
+
+#summary(df$Computed_Missing_Max_Age)
+
+#creating large spatial data frame
+#coordinates(df) <- c("Longitude", "Latitude")
+
+#summary(df)
+
+
+
+#df_sf <-st_transform(df, crs= 4326)
+#df_sf <- st_as_sf(df, coords = c("Latitude", "Longitude"), crs = 4326)
+
+#class(df_sf)
+
+#crs.geo1 <- CRS("+proj=longlat")  
+#proj4string(df_sf) <- CRS("+proj=longlat + ellps=WGS84")
+#data <-spTransform(data,CRS="+proj=utm +zone=18 +datum=WGS84")
+#proj4string(df_sf) <- crs.geo1   
+#summary(df)
+
+
 
 #identify state names in states dataframe
-states$names
+#states$names
 #identify state names in missing persons dataset
-row.names(mp1) <- mp1$State_Of_Last_Contact
+#row.names(df) <- df$State_Of_Last_Contact
 #identify state codes in states dataframe
-head(state.fips)
-head(state.fips)
+#head(state.fips)
+#head(state.fips)
 
-mp1$State_Of_Last_Contact
+#mp1$State_Of_Last_Contact
 
 #linking the two 
-mp_state <- mp1[as.character(state.fips$abb), -1]
+#mp_state <- mp1[as.character(state.fips$abb), -1]
 
-library(dplyr)
-library(plyr)
+
 #dataframes for analyses
-mp <- read.csv("mp1.csv")
+#mp <- read.csv("mp1.csv")
 
 
-mp_per_state <- count(mp, "State_Of_Last_Contact")
-mp_per_county <- count(mp, "State_Of_Last_Contact", "County_Of_Last_Contact")
-mp_per_city <- count(mp, "City_Of_Last_Contact")
 
-head(state.fips)
-count(df, "State_Of_Last_Contact")
+#head(state.fips)
+#count(df, "State_Of_Last_Contact")
 
-colnames(mp_per_state)
+#colnames(mp_per_state)
 
-summary(mp_per_state)
+#summary(mp_per_state)
 
-colnames(mp)
-mp_per_state$namus2Number
-row.names(df) <- data.frame(df$State_Of_Last_Contact)
+#colnames(mp)
+#mp_per_state$namus2Number
+#row.names(df) <- data.frame(df$State_Of_Last_Contact)
 
-colnames(mp)
+#colnames(mp)
 
-dfnew5 <- count(df, "State_Of_Last_Contact", "County_Of_Last_Contact")
+#dfnew5 <- count(df, "State_Of_Last_Contact", "County_Of_Last_Contact")
 
 
 
