@@ -13,6 +13,17 @@ options(tigris_use_cache = TRUE)
 library(sf)
 library(sp)
 library(censusapi)
+library(rgdal)
+library(KernSmooth)
+library(spatstat)
+library(spdep)
+library(GISTools)
+library(tmap)
+library(tmaptools)
+library(maptools)
+library(data.table)
+library(raster)
+
 
 #defining state boundaries and obtaining census tract data (Large SpatialPolygonsDataFrame)
 states <- states(cb=T)
@@ -132,7 +143,7 @@ state_pop$state_id <- as.numeric(state_pop$state_id)
 
 #pulling in R's state abbreviations
 state_off <- data.frame(state.abb, state.name)
-head(state_off)
+#head(state_off)
 
 #creating relational dataframe between states and state abbreviations
 # Cleaning up the names for easier joining
@@ -141,7 +152,7 @@ colnames(state_off) <- c("state", "NAME")
 # Joining state population dataframe to relationship file
 state_pop <- left_join(state_pop, state_off)
 
-# The relationship dataframe didnt have DC or Puerto Rico, so I'm manually putting those in
+# The relationship dataframe didnt have DC or Puerto Rico, so these must be imputted manually
 state_pop$state <- ifelse(state_pop$NAME=="District of Columbia", "DC", as.character(state_pop$state))
 state_pop$state <- ifelse(state_pop$NAME=="Puerto Rico", "PR", as.character(state_pop$state))
 
@@ -169,7 +180,7 @@ pal_mp <- colorNumeric("Blues", domain=states_merged_mp_pc$per_capita)
 states_merged_mp_pc <- subset(states_merged_mp_pc, !is.na(per_capita))
 
 # new popup withs state-specific data reactive upon click
-popup_sb <- paste0("<strong>", states_merged_mp_pc$NAME, 
+popup_mp <- paste0("<strong>", states_merged_mp_pc$NAME, 
                    "</strong><br />Total: ", states_merged_mp_pc$total,
                    "<br />Per capita: ", 
                    as.character(states_merged_mp_pc$per_capita))
@@ -194,7 +205,51 @@ leaflet() %>%
 
 #implementing spatial analyses 
 
+#kernel density estimation
+
+#tmap_mode('view')
+# Create the map of blocks and incidents
+#tm_shape(states_merged_mp_pc) + tm_borders() + tm_shape(states_merged_mp) +
+  #tm_dots(col='navyblue')
+
+#tmap_mode('view')
+#mp_dens <- smooth_map(states_merged_mp_pc,cover=states_merged_mp, bandwidth = choose_bw(states_merged_mp))
+
+#choose_bw <- function(spdf) {
+  #X <- coordinates(spdf)
+  #sigma <- c(sd(X[,1]),sd(X[,2]))  * (2 / (3 * nrow(X))) ^ (1/6)
+  #return(sigma/1000)
+#}
+
+#tmap_mode('view')
+#mp_dens <- smooth_map(states_merged_mp_pc,cover=states_merged_mp, bandwidth = choose_bw(states_merged_mp))
+
+#rd=.5
+#op=.8
+#clr="blue"
+#m = leaflet() %>% addTiles()
+#m %>% addCircles(df$Longitude,df$Latitude, radius = rd,opacity=op,col=clr)
+
+#X=cbind(df$Longitude,df$Latitude)
+#kde2d <- bkde2D(X, bandwidth=c(bw.ucv(X[,2]),bw.ucv(X[,2])))
+#kde2d <- bkde2D(x, y, h, n = 25, lims = c(range(x), range(y)))
+#x=kde2d$x1
+#y=kde2d$x2
+z=kde2d$fhat
+#CL=contourLines(x , y , z)
+
+#m = leaflet() %>% addTiles() 
+#m %>% addPolygons(CL[[5]]$x,CL[[5]]$y,fillColor = "red", stroke = FALSE)
 
 
+#tmap_mode('plot')
+#contours <- seq(0, 1.4, by=0.2)
+#mp_dens <- smooth_map(states_merged_mp, cover=states_merged_mp, breaks=contours,
+                      #style='fixed',
+                      #bandwidth=choose_bw(states_merged_mp))
+
+#dn <- tm_shape(states_merged_mp) + tm_borders() + 
+ # tm_shape(states_merged_mp$polygons + tm_fill(col='level',alpha=0.8) +
+  #tm_layout(title="Non-Forced Burglaries"))
 
 

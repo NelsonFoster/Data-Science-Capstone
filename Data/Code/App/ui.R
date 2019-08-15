@@ -6,19 +6,24 @@ ui <- fluidPage(
   helpText( "Source data provided by the "
             , a("The National Missing and Unidentified Persons System (Namus), Department of Justice", href = "https://www.namus.gov")
             , "."
-  ),
-
-  sidebarLayout( sidebarPanel( selectInput( inputId = 'variable' 
-                                            , label   = "Choose a State"
-                                            , choices = colnames(df$State_Of_Last_Contact)
-  )
+  
   )
   
   # Leaflet map
-  , mainPanel( leafletOutput("mymap",height = 1000) )
-  )
   
+  ,navbarPage(title = "Maps of Missing Persons",
+             tabPanel("Point Map", mainPanel( leafletOutput("mymap",height = 1000) )
+             ),
+             tabPanel("Population Map", mainPanel( leafletOutput("mymap1",height = 1000)) 
+             ),
+             tabPanel("Per Capita Map", mainPanel( leafletOutput("mymap2",height = 1000))
+  )
+  )
 )
+
+  
   
 
+ 
+  
   
