@@ -23,6 +23,9 @@ library(tmaptools)
 library(maptools)
 library(data.table)
 library(raster)
+library(ggplot2)
+library(reshape2)
+library(rgeos)
 
 
 #defining state boundaries and obtaining census tract data (Large SpatialPolygonsDataFrame)
@@ -202,54 +205,128 @@ leaflet() %>%
 
 
 
-
 #implementing spatial analyses 
 
-#kernel density estimation
+#working with sf formats to create spatial polygons data frame
 
-#tmap_mode('view')
-# Create the map of blocks and incidents
-#tm_shape(states_merged_mp_pc) + tm_borders() + tm_shape(states_merged_mp) +
-  #tm_dots(col='navyblue')
+#reading in previously generated shapefile from csv
+df_points <- st_read("df_points.shp")
 
-#tmap_mode('view')
-#mp_dens <- smooth_map(states_merged_mp_pc,cover=states_merged_mp, bandwidth = choose_bw(states_merged_mp))
+#verify proper sf format and Coordinate Reference System (CRS)
+class(df_points)
+st_crs(df_points)
 
-#choose_bw <- function(spdf) {
-  #X <- coordinates(spdf)
-  #sigma <- c(sd(X[,1]),sd(X[,2]))  * (2 / (3 * nrow(X))) ^ (1/6)
-  #return(sigma/1000)
-#}
+#updating Race & Ethnicity categories in df_points for "cleaner" aggregaions
+#to be used in hypothesis testing later (reference: https://nces.ed.gov/statprog/2002/std1_5.asp)
 
-#tmap_mode('view')
-#mp_dens <- smooth_map(states_merged_mp_pc,cover=states_merged_mp, bandwidth = choose_bw(states_merged_mp))
-
-#rd=.5
-#op=.8
-#clr="blue"
-#m = leaflet() %>% addTiles()
-#m %>% addCircles(df$Longitude,df$Latitude, radius = rd,opacity=op,col=clr)
-
-#X=cbind(df$Longitude,df$Latitude)
-#kde2d <- bkde2D(X, bandwidth=c(bw.ucv(X[,2]),bw.ucv(X[,2])))
-#kde2d <- bkde2D(x, y, h, n = 25, lims = c(range(x), range(y)))
-#x=kde2d$x1
-#y=kde2d$x2
-z=kde2d$fhat
-#CL=contourLines(x , y , z)
-
-#m = leaflet() %>% addTiles() 
-#m %>% addPolygons(CL[[5]]$x,CL[[5]]$y,fillColor = "red", stroke = FALSE)
+df_points$Rc_Et[df_points$Rc_Et=="Black / African American;Hispanic / Latino"] <- "Black / African American"
+df_points$Rc_Et[df_points$Rc_Et=="Black / African American;White / Caucasian"] <- "Black / African American"
+df_points$Rc_Et[df_points$Rc_Et=="Hispanic / Latino;Asian"] <- "Hispanic / Latino"
+df_points$Rc_Et[df_points$Rc_Et=="Hispanic / Latino;Native American / Alaskan Native"] <- "Hispanic / Latino"
+df_points$Rc_Et[df_points$Rc_Et=="Hispanic / Latino;Uncertain"] <- "Hispanic / Latino"
+df_points$Rc_Et[df_points$Rc_Et=="Other"] <- "Other/Uncertain"
+df_points$Rc_Et[df_points$Rc_Et=="Uncertain"] <- "Other/Uncertain"
+df_points$Rc_Et[df_points$Rc_Et=="White / Caucasian;Black / African American"] <- "White / Caucasian"
+df_points$Rc_Et[df_points$Rc_Et=="White / Caucasian;Hispanic / Latino"] <- "White / Caucasian"
+df_points$Rc_Et[df_points$Rc_Et=="White / Caucasian;Uncertain"] <- "White / Caucasian"
 
 
-#tmap_mode('plot')
-#contours <- seq(0, 1.4, by=0.2)
-#mp_dens <- smooth_map(states_merged_mp, cover=states_merged_mp, breaks=contours,
-                      #style='fixed',
-                      #bandwidth=choose_bw(states_merged_mp))
+#displaying Quick Thematic Map (QTM) using tmap
 
-#dn <- tm_shape(states_merged_mp) + tm_borders() + 
- # tm_shape(states_merged_mp$polygons + tm_fill(col='level',alpha=0.8) +
-  #tm_layout(title="Non-Forced Burglaries"))
+qtm(states_merged_mp_pc, fill = "blue", style = "natural")
+
+#total missing persons
+qtm(states_merged_mp_pc, fill="total", text="state", text.size=0.5, 
+    format="World_wide", style="classic", 
+    text.root=5, fill.title="Total Missing Persons")
+
+#per capita missing persons
+qtm(states_merged_mp_pc, fill="per_capita", text="state", text.size=0.5, 
+    format="World_wide", style="classic", 
+    text.root=5, fill.title="Total Missing Persons")
+
+#creating tmap with histogram
+tm_shape(states_merged_mp_pc) +
+  tm_polygons("per_capita", title = "Missing Persons Per Capita", palette = "GnBu", 
+              breaks = c(0, round(quantileCuts(states_merged_mp_pc$per_capita, 6), 1)), 
+              legend.hist = T) +
+  tm_scale_bar(width = 0.02) +
+  tm_compass(position = c(0.01, 0.01)) +
+  tm_layout(frame = F, title = "United States", 
+            title.size = 0.25, title.position = c(0.25, "top"), 
+            legend.hist.size = 0.25)
+
+tmap_mode("view")
+tm_shape(df_points) +
+  tm_dots(size = 0.5, shape = 19, col = "blue", alpha = 0.5)
+
+
+
+#summary statistics
+ggplot(states_merged_mp_pc@data, aes(total)) +
+  geom_histogram(col = "salmon", fill = "cyan", bins = 52) +
+  xlab("Number of Missing persions") +
+  labs(title = "Distribution of Missing Persons - Total")
+
+ggplot(states_merged_mp_pc@data, aes(per_capita)) +
+  geom_histogram(col = "salmon", fill = "cyan", bins = 52) +
+  xlab("Per Capita Missing persions") +
+  labs(title = "Distribution of Missing Persions - Per Capita")
+
+
+
+ggplot(states_merged_mp@data, aes()) +
+  geom_histogram(col = "salmon", fill = "cyan", bins = 52) +
+  xlab("Number of Missing persions") +
+  labs(title = "Distribution of Missing persions")
+
+#kernel Density Estimation
+
+#initial map of missing persons incidences per state
+
+tmap_mode('view')
+#tmap mode set to interactive viewing
+tm_shape(states_merged_mp_pc) + tm_borders() + tm_shape(df_points) +
+  tm_dots(col='navyblue')
+
+#choosing bandwidth using Bowman & Azzalini / Scott Rule
+
+choose_bw <- function(spdf) {
+  X <- coordinates(spdf)
+  sigma <- c(sd(X[, 1]), sd(X[,2])) * (2 / (3 * nrow(X)) ^ (1/6))
+  return(sigma/1000)
+}
+
+
+#reprojection to common CRS:  
+
+#choosing World Azimuthal Equal Area - North Amaerica to Preserve Distances
+#European Petroleum Survey Group (EPSG) Spatial Reference System Identifier (SRID) code 54032
+#references https://epsg.io/54032, http://desktop.arcgis.com/en/arcmap/10.3/guide-books/map-projections/azimuthal-equidistant.htm
+#http://desktop.arcgis.com/en/arcmap/10.3/manage-data/using-sql-with-gdbs/what-is-an-srid.htm
+
+df_points_transform <- st_transform(df_points,"+proj=aeqd +lat_0=38.7 +lon_0=-98.5 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+
+                                      
+
+states_merged_mp_pc_transform <- spTransform(states_merged_mp_pc, CRS("+proj=aeqd +lat_0=38.7 +lon_0=-98.5 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))
+
+#states_merged_mp_pc_transform <- gSimplify(states_merged_mp_pc_transform, tol = 0.00001)
+#states_merged_mp_pc_transform <- spTransform(states_merged_mp_pc, CRS("+proj=aeqd +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"))
+
+#germG <- spTransform(mapG, CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+#plotting densities 
+
+tmap_mode("view")
+
+mp_dens <- smooth_map(df_points_transform, cover=states_merged_mp_pc_transform, choose_bw(df_points_transform))
+tm_shape(mp_dens$raster) + tm_raster()
+
+
+#using isolines
+
+tm_shape(states_merged_mp_pc_transform) + tm_borders(alpha=0.5) +
+  tm_shape(mp_dens$iso) + tm_lines(col='darkred', lwd=2)
+
 
 

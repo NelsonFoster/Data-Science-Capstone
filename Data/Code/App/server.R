@@ -10,6 +10,7 @@ server <- function(input,output, session){
     
     m <- leaflet(data = df) %>%
       addTiles() %>%
+      addProviderTiles("OpenStreetMap")%>%
       addMarkers(lng = ~Longitude,
                  lat = ~Latitude,
                  popup = paste("ID:", df$id_Formatted, "<br>",
